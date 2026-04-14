@@ -1,0 +1,53 @@
+﻿@page "/"
+@using LawsonSLab5.Services
+@inject ILibraryService LibraryService
+
+<PageTitle>Library Management System</PageTitle>
+
+<div class="text-center mt-4">
+    <h1>📖 Library Management System</h1>
+    <p class="lead text-muted">CSCI 2910 – Lab 5 &nbsp;|&nbsp; Blazor Web Application</p>
+</div>
+
+<div class="row mt-5 g-4 justify-content-center">
+    <div class="col-md-3">
+        <div class="card text-center border-primary h-100">
+            <div class="card-body">
+                <h1 class="display-4">@bookCount</h1>
+                <p class="card-text text-muted">Books in Library</p>
+                <a href="/books" class="btn btn-outline-primary">Manage Books</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-success h-100">
+            <div class="card-body">
+                <h1 class="display-4">@userCount</h1>
+                <p class="card-text text-muted">Registered Users</p>
+                <a href="/users" class="btn btn-outline-success">Manage Users</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-warning h-100">
+            <div class="card-body">
+                <h1 class="display-4">@borrowedCount</h1>
+                <p class="card-text text-muted">Books Checked Out</p>
+                <a href="/borrow" class="btn btn-outline-warning">Borrow &amp; Return</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int bookCount;
+    private int userCount;
+    private int borrowedCount;
+
+    protected override void OnInitialized()
+    {
+        bookCount    = LibraryService.GetBooks().Count;
+        userCount    = LibraryService.GetUsers().Count;
+        borrowedCount = LibraryService.GetBorrowedBooks().Count;
+    }
+}

@@ -1,0 +1,213 @@
+@page "/borrow"
+@using LawsonSLab5.Models
+@using LawsonSLab5.Services
+@inject ILibraryService LibraryService
+
+<PageTitle>Borrow & Return Books</PageTitle>
+
+<h2>Borrow &amp; Return Books</h2>
+
+<div class="row g-4">
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">Borrow a Book</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Select User</label>
+                    <select class="form-select" @bind="borrowUserId">
+                        <option value="0">-- Select a user --</option>
+                        @foreach (var user in users)
+                        {
+                            <option value="@user.Id">@user.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Select Available Book</label>
+                    <select class="form-select" @bind="borrowBookId">
+                        <option value="0">-- Select a book --</option>
+                        @foreach (var book in availableBooks)
+                        {
+                            <option value="@book.Id">@book.Title – @book.Author</option>
+                        }
+                    </select>
+                </div>
+                <button class="btn btn-primary" @onclick="BorrowBook">Borrow</button>
+
+                @if (!string.IsNullOrEmpty(borrowMessage))
+                {
+                    <div class="alert @borrowAlertClass mt-3">@borrowMessage</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">Return a Book</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Select User</label>
+                    <select class="form-select" @bind="returnUserId" @bind:after="LoadUserBorrows">
+                        <option value="0">-- Select a user --</option>
+                        @foreach (var user in users)
+                        {
+                            <option value="@user.Id">@user.Name</option>
+                        }
+                    </select>
+                </div>
+
+                @if (userBorrowedBooks.Count > 0)
+                {
+                    <ul class="list-group">
+                        @foreach (var br in userBorrowedBooks)
+                        {
+                            var book = allBooks.FirstOrDefault(b => b.Id == br.BookId);
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    @book?.Title
+                                    <small class="text-muted">– @book?.Author</small>
+                                </span>
+                                <button class="btn btn-sm btn-success"
+                                        @onclick="() => ReturnBook(br.BookId)">
+                                    Return
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
+                else if (returnUserId > 0)
+                {
+                    <p class="text-muted">This user has no borrowed books.</p>
+                }
+
+                @if (!string.IsNullOrEmpty(returnMessage))
+                {
+                    <div class="alert @returnAlertClass mt-3">@returnMessage</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">All Currently Borrowed Books</div>
+    <div class="card-body">
+        @if (allBorrowed.Count == 0)
+        {
+            <p class="text-muted">No books are currently checked out.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Book</th>
+                        <th>Author</th>
+                        <th>ISBN</th>
+                        <th>Borrowed On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var br in allBorrowed)
+                    {
+                        var user = users.FirstOrDefault(u => u.Id == br.UserId);
+                        var book = allBooks.FirstOrDefault(b => b.Id == br.BookId);
+                        <tr>
+                            <td>@(user?.Name ?? "Unknown")</td>
+                            <td>@(book?.Title ?? "Unknown")</td>
+                            <td>@(book?.Author ?? "")</td>
+                            <td>@(book?.ISBN ?? "")</td>
+                            <td>@br.BorrowedDate.ToShortDateString()</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private List<User> users = new();
+    private List<Book> allBooks = new();
+    private List<Book> availableBooks = new();
+    private List<BorrowedBook> allBorrowed = new();
+    private List<BorrowedBook> userBorrowedBooks = new();
+
+    private int borrowUserId = 0;
+    private int borrowBookId = 0;
+    private int returnUserId = 0;
+
+    private string borrowMessage   = string.Empty;
+    private string returnMessage   = string.Empty;
+    private string borrowAlertClass = "alert-success";
+    private string returnAlertClass  = "alert-success";
+
+    protected override void OnInitialized()
+    {
+        Refresh();
+    }
+
+    private void Refresh()
+    {
+        users          = LibraryService.GetUsers();
+        allBooks       = LibraryService.GetBooks();
+        availableBooks = allBooks.Where(b => b.IsAvailable).ToList();
+        allBorrowed    = LibraryService.GetBorrowedBooks();
+        LoadUserBorrows();
+    }
+
+    private void LoadUserBorrows()
+    {
+        userBorrowedBooks = returnUserId > 0
+            ? allBorrowed.Where(br => br.UserId == returnUserId).ToList()
+            : new List<BorrowedBook>();
+    }
+
+    private void BorrowBook()
+    {
+        if (borrowUserId == 0 || borrowBookId == 0)
+        {
+            borrowMessage    = "Please select both a user and a book.";
+            borrowAlertClass = "alert-warning";
+            return;
+        }
+
+        var success = LibraryService.BorrowBook(borrowUserId, borrowBookId);
+        if (success)
+        {
+            var book = allBooks.FirstOrDefault(b => b.Id == borrowBookId);
+            var user = users.FirstOrDefault(u => u.Id == borrowUserId);
+            borrowMessage    = $"'{book?.Title}' successfully borrowed by {user?.Name}.";
+            borrowAlertClass = "alert-success";
+            borrowBookId     = 0;
+        }
+        else
+        {
+            borrowMessage    = "Could not borrow the book. It may already be checked out.";
+            borrowAlertClass = "alert-danger";
+        }
+
+        Refresh();
+    }
+
+    private void ReturnBook(int bookId)
+    {
+        var success = LibraryService.ReturnBook(returnUserId, bookId);
+        if (success)
+        {
+            var book = allBooks.FirstOrDefault(b => b.Id == bookId);
+            returnMessage    = $"'{book?.Title}' returned successfully.";
+            returnAlertClass = "alert-success";
+        }
+        else
+        {
+            returnMessage    = "Could not process the return.";
+            returnAlertClass = "alert-danger";
+        }
+
+        Refresh();
+    }
+}
