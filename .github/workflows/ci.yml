@@ -23,7 +23,7 @@ jobs:
               run: dotnet restore
 
             - name: Build
-              run: dotnet build --no-restore
+              run: dotnet build LawsonSLab6/LawsonSLab6.csproj --no-restore
 
             - name: Run tests
-              run: dotnet test --no-build --verbosity normal
+              run: dotnet test LawsonSLab6/LawsonSLab6.csproj --no-build --verbosity normal
