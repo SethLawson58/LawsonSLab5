@@ -21,7 +21,7 @@ namespace LawsonSLab5
             var books = service.GetBooks();
 
             //Assert
-            Assert.Equal(99, books.Count);
+            Assert.Equal(2, books.Count);
             Assert.Equal("The Great Gatsby", books[0].Title);
             Assert.Equal("George Orwell", books[1].Author);
         }
