@@ -20,7 +20,7 @@ jobs:
                 dotnet-version: '8.0.x'
 
             - name: Restore dependencies
-              run: dotnet restore
+              run: dotnet restore LawsonSLab6/LawsonSLab6.csproj
 
             - name: Build
               run: dotnet build LawsonSLab6/LawsonSLab6.csproj --no-restore
